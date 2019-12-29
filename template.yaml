@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Check whether instances keeps stopped status or not.
+  If are there stopped instances for a long time, notify to slack.
+Globals:
+  Function:
+    Timeout: 900
+
+Resources:
+  ManageTagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions
+      Handler: manage_last_stop_time_tags/app.lambda_handler
+      Runtime: python3.8
+      Description: "When instances stopped, create specific tag. When instances started, delete one."
+      Environment:
+        Variables:
+          tag_name_for_last_stop: last_stop_time
+      Events:
+        CWEvent:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - aws.ec2
+              detail-type:
+                - EC2 Instance State-change Notification
+              detail:
+                state:
+                  - stopped
+                  - running
+      Role: !GetAtt ManageTagLambdaRole.Arn
+
+  CheckInstanceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions
+      Handler: check_longtime_stopped_instance/app.lambda_handler
+      Runtime: python3.8
+      Description: "If are there stopped instances for a long time, notify to slack."
+      Environment:
+        Variables:
+          stop_period: 1
+          tag_name_for_last_stop: last_stop_time
+          slack_url_ssm_parameter: slack_url
+      Events:
+        Cron:
+          Type: Schedule
+          Properties:
+            Enabled: true
+            Name: Scheduled_every_9am_JST_on_weekdays
+            Schedule: "cron(0 0 ? * MON-FRI *)"
+      Role: !GetAtt CheckInstanceLambdaRole.Arn
+
+  ManageTagLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      RoleName: !Sub manage-tag-role-${AWS::Region}
+
+  CheckInstanceLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      RoleName: !Sub check-instance-role-${AWS::Region}
+
+  ManageTagLambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: logs:CreateLogGroup
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource:
+              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ManageTagFunction}:*
+          - Effect: Allow
+            Action:
+              - ec2:CreateTags
+              - ec2:DeleteTags
+            Resource:
+              - "*"
+      PolicyName: !Sub manage-tag-policy-${AWS::Region}
+      Roles:
+        - !Ref ManageTagLambdaRole
+
+  CheckInstanceLambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: logs:CreateLogGroup
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource:
+              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${CheckInstanceFunction}:*
+          - Effect: Allow
+            Action:
+              - ec2:DescribeInstances
+              - ec2:DescribeTags
+              - ssm:GetParameter
+              - kms:Decrypt
+            Resource:
+              - "*"
+      PolicyName: !Sub check-instance-policy-${AWS::Region}
+      Roles:
+        - !Ref CheckInstanceLambdaRole
+
+Outputs:
+  ManageTagFunction:
+    Description: "Manage Tag Lambda Function ARN"
+    Value: !GetAtt ManageTagFunction.Arn
+  CheckInstanceFunction:
+    Description: "Check Instance Lambda Function ARN"
+    Value: !GetAtt CheckInstanceFunction.Arn
