@@ -36,6 +36,5 @@ jobs:
         role-duration-seconds: 1200
         role-session-name: nasu
     - name: deploy to prod
-      if: startsWith(github.ref, 'refs/heads/master')
       run: bash deploy.sh
       shell: bash
