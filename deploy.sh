@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sam build --use-container
+sam build
 
 #sam package \
 #    --output-template-file packaged.yaml \
