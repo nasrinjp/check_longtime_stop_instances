@@ -35,6 +35,11 @@ jobs:
         role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
         role-duration-seconds: 1200
         role-session-name: nasu
+#    - name: deploy to prod
+#      run: bash deploy.sh
+#      shell: bash
     - name: deploy to prod
-      run: bash deploy.sh
+      run: |
+        sam build
+        sam deploy --stack-name cicd-test --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM --region us-west-2
       shell: bash
