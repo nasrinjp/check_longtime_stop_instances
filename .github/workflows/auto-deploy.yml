@@ -43,4 +43,4 @@ jobs:
 #        aws sts get-caller-identity
 #        sam build
 #        sam deploy --stack-name cicd-test --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM --region us-west-2
-      shell: bash
+#      shell: bash
