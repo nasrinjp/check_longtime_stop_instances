@@ -13,3 +13,4 @@
 
 date
 echo test-dayo
+pwd
