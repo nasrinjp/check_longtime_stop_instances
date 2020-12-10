@@ -1,6 +1,44 @@
 #!/bin/bash
 
-pwd
+################################################
+# Deploy Shell
+# argment 1:環境（dev,apiDev,staging,prod)
+#         2:GitHubのbranch
+################################################
+
+## 引数チェック＆設定
+if [ -z $1  ]; then
+    echo "引数を指定してください。"
+    exit 1
+fi
+
+env="$1"
+if [ "$env" = "dev" ]; then
+    s3_bucket="dev-test"
+    cf_dist_id="E1AAA"
+elif [ "$env" = "prod" ]; then
+    s3_bucket="prod-test"
+    cf_dist_id="E1BBB"
+else
+    echo "対象の環境はありません。引数を見直してください。"
+    exit 1
+fi
+
+if [ -z $2  ]; then
+    if [ "$env" = "prod" ]; then
+        # 本番のデフォルトはmasterブランチ
+        git_branch="origin/master"
+    else
+        # デフォルトはdevelopブランチ
+        git_branch="origin/develop"
+    fi
+else
+    git_branch="$2"
+fi
+
+echo $s3_bucket 
+echo $cf_dist_id
+echo $git_branch
 
 # ライブラリインストール
 echo ">>ライブラリインストール開始"
@@ -25,7 +63,7 @@ cd functions
 pwd
 aws sts get-caller-identity
 # distフォルダへ移動
-#cd /home/ec2-user/mean-community-Web/dist
+#cd /home/aaa/dist
 # S3の資源を削除
 #aws s3 rm s3://$s3_bucket/ --include '*' --recursive
 #[ $((${PIPESTATUS[@]/%/+}0)) -gt 0 ] && exit 1
