@@ -1,29 +1,30 @@
 name: test
 
 on:
-  # トリガーを決める
-  pull_request:
-    branches:
-      - master
-    types: [closed]
+  # 手動実行
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'target env'
+        required: true
+        default: 'staging'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.merged == true }}
 
     steps:
     - uses: actions/checkout@v2
       with:
-        ref: ${{ github.base_ref }}
+        ref: master
     - name: Specify outputs
       id: set_output
       shell: bash
       run: |
-        case ${{ github.base_ref }} in
-          "develop" ) echo "::set-output name=DEPLOY_ENV::dev"
+        case ${{ github.event.inputs.environment }} in
+          "dev" ) echo "::set-output name=DEPLOY_ENV::dev"
                       echo "::set-output name=DEPLOY_BRANCH::origin/develop" ;;
-          "master" ) echo "::set-output name=DEPLOY_ENV::prod"
+          "prod" ) echo "::set-output name=DEPLOY_ENV::prod"
                      echo "::set-output name=DEPLOY_BRANCH::origin/master" ;;
           * ) echo "::set-output name=DEPLOY_ENV::none" ;;
         esac
