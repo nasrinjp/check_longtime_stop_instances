@@ -25,7 +25,7 @@ jobs:
           "refs/heads/apidevelop" ) echo "::set-output name=DEPLOY_ENV::apiDev" ;;
           "refs/heads/develop" ) echo "::set-output name=DEPLOY_ENV::dev" ;;
           "refs/heads/staging" ) echo "::set-output name=DEPLOY_ENV::staging" ;;
-					"refs/heads/master" ) echo "::set-output name=DEPLOY_ENV::prod" ;;
+          "refs/heads/master" ) echo "::set-output name=DEPLOY_ENV::prod" ;;
           * ) echo "::set-output name=DEPLOY_ENV::none" ;;
         esac
     - name: Set up Python
