@@ -39,6 +39,7 @@ fi
 echo $s3_bucket 
 echo $cf_dist_id
 echo $git_branch
+git status
 
 # ライブラリインストール
 echo ">>ライブラリインストール開始"
