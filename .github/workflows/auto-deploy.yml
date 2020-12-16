@@ -21,7 +21,7 @@ jobs:
       shell: bash
       run: |
         echo ${{ github.ref }}
-        case ${{ github.ref }} in
+        case "${{ github.ref }}" in
           "refs/heads/apidevelop" ) echo "::set-output name=DEPLOY_ENV::apiDev" ;;
           "refs/heads/develop" ) echo "::set-output name=DEPLOY_ENV::dev" ;;
           "refs/heads/staging" ) echo "::set-output name=DEPLOY_ENV::staging" ;;
