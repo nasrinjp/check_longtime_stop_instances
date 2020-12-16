@@ -1,33 +1,31 @@
 name: test
 
 on:
-  # トリガーを決める
-  pull_request:
-    branches:
-      - apidevelop
-      - develop
-      - staging
-    types: [closed]
+  workflow_dispatch:
+    # inputs:
+    #   environment:
+    #     description: 'target environment'
+    #     required: true
+    #     default: 'prod'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.merged == true }}
 
     steps:
     - uses: actions/checkout@v2
       with:
-        ref: ${{ github.base_ref }}
+        ref: ${{ github.ref }}
     - name: Specify outputs
       id: set_output
       shell: bash
       run: |
-        echo ${{ github.base_ref }}
-        case ${{ github.base_ref }} in
-          "develop" ) echo "::set-output name=DEPLOY_ENV::dev"
-                      echo "::set-output name=DEPLOY_BRANCH::origin/develop" ;;
-          "master" ) echo "::set-output name=DEPLOY_ENV::prod"
-                     echo "::set-output name=DEPLOY_BRANCH::origin/master" ;;
+        echo ${{ github.ref }}
+        case ${{ github.ref }} in
+          "refs/heads/apidevelop" ) echo "::set-output name=DEPLOY_ENV::apiDev" ;;
+          "refs/heads/develop" ) echo "::set-output name=DEPLOY_ENV::dev" ;;
+          "refs/heads/staging" ) echo "::set-output name=DEPLOY_ENV::staging" ;;
+          "refs/heads/master" ) echo "::set-output name=DEPLOY_ENV::prod" ;;
           * ) echo "::set-output name=DEPLOY_ENV::none" ;;
         esac
     - name: Set up Python
@@ -55,4 +53,4 @@ jobs:
         role-session-name: nasu
     - name: deploy
       shell: bash
-      run: bash deploy/deploy-test.bash ${{ steps.set_output.outputs.DEPLOY_ENV }} ${{ steps.set_output.outputs.DEPLOY_BRANCH }}
+      run: bash deploy/deploy-test.bash ${{ steps.set_output.outputs.DEPLOY_ENV }}

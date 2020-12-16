@@ -24,21 +24,8 @@ else
     exit 1
 fi
 
-if [ -z $2  ]; then
-    if [ "$env" = "prod" ]; then
-        # 本番のデフォルトはmasterブランチ
-        git_branch="origin/master"
-    else
-        # デフォルトはdevelopブランチ
-        git_branch="origin/develop"
-    fi
-else
-    git_branch="$2"
-fi
-
 echo $s3_bucket 
 echo $cf_dist_id
-echo $git_branch
 git status
 
 # ライブラリインストール
