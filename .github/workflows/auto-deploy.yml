@@ -16,11 +16,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        ref: master
+        ref: ${{ github.ref }}
     - name: Specify outputs
       id: set_output
       shell: bash
       run: |
+        echo ${{ github.ref }}
         case ${{ github.event.inputs.environment }} in
           "dev" ) echo "::set-output name=DEPLOY_ENV::dev"
                       echo "::set-output name=DEPLOY_BRANCH::origin/develop" ;;
