@@ -63,4 +63,4 @@ jobs:
         role-session-name: nasu
     - name: deploy
       shell: bash
-      run: bash deploy/github-actions-deploy.sh ${{ steps.set_output.outputs.DEPLOY_ENV }}
+      run: bash deploy/deploy-test.bash ${{ steps.set_output.outputs.DEPLOY_ENV }}
