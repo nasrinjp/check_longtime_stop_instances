@@ -1,0 +1,66 @@
+name: Automatic deployment
+
+on:
+  pull_request:
+    branches:
+      - apidevelop
+      - develop
+      - staging
+    types: [closed]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.merged == true }}
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.base_ref }}
+    - name: Specify outputs
+      id: set_output
+      shell: bash
+      run: |
+        case "${{ github.base_ref }}" in
+          "apidevelop" ) echo "::set-output name=DEPLOY_ENV::apiDev" ;;
+          "develop" ) echo "::set-output name=DEPLOY_ENV::dev" ;;
+          "staging" ) echo "::set-output name=DEPLOY_ENV::staging" ;;
+          * ) echo "::set-output name=DEPLOY_ENV::none" ;;
+        esac
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install awscli
+    - name: Setup Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: '14'
+    - name: Configure AWS Credentials
+      if: github.base_ref == 'develop' || github.base_ref == 'apidevelop'
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-1
+        role-to-assume: ${{ secrets.AWS_ROLE_FOR_DEV }}
+        role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
+        role-duration-seconds: 1200
+        role-session-name: nasu
+    - name: Configure AWS Credentials
+      if: github.base_ref == 'staging'
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-1
+        role-to-assume: ${{ secrets.AWS_ROLE_FOR_PROD }}
+        role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
+        role-duration-seconds: 1200
+        role-session-name: nasu
+    - name: deploy
+      shell: bash
+      run: bash deploy/github-actions-deploy.sh ${{ steps.set_output.outputs.DEPLOY_ENV }}
