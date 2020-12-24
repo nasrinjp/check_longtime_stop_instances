@@ -1,0 +1,61 @@
+name: Manual deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.ref }}
+    - name: Specify outputs
+      id: set_output
+      shell: bash
+      run: |
+        echo ${{ github.ref }}
+        case "${{ github.ref }}" in
+          "refs/heads/apidevelop" ) echo "::set-output name=DEPLOY_ENV::apiDev" ;;
+          "refs/heads/develop" ) echo "::set-output name=DEPLOY_ENV::dev" ;;
+          "refs/heads/staging" ) echo "::set-output name=DEPLOY_ENV::staging" ;;
+          * ) echo "::set-output name=DEPLOY_ENV::none" ;;
+        esac
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install awscli
+    - name: Setup Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: '14'
+    - name: Configure AWS Credentials
+      if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/apidevelop'
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-1
+        role-to-assume: ${{ secrets.AWS_ROLE_FOR_DEV }}
+        role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
+        role-duration-seconds: 1200
+        role-session-name: nasu
+    - name: Configure AWS Credentials
+      if: github.ref == 'refs/heads/staging'
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-1
+        role-to-assume: ${{ secrets.AWS_ROLE_FOR_PROD }}
+        role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
+        role-duration-seconds: 1200
+        role-session-name: nasu
+    - name: deploy
+      shell: bash
+      run: bash deploy/github-actions-deploy.sh ${{ steps.set_output.outputs.DEPLOY_ENV }}
